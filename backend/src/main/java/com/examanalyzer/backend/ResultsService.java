@@ -1,29 +1,41 @@
 package com.examanalyzer.backend;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ResultsService {
+public class ResultsService implements CommandLineRunner {
 
-    private final List<Mark> marks = new CopyOnWriteArrayList<>();
+    public static final String DEMO_OWNER = "demo";
 
-    public ResultsService() {
-        seed();
+    private final MarkRepository repo;
+
+    public ResultsService(MarkRepository repo) {
+        this.repo = repo;
     }
 
-    public void addMark(Mark mark) {
-        // replace an existing mark for the same learner and subject
-        marks.removeIf(m -> m.learnerId().equals(mark.learnerId())
-                && m.subject().equalsIgnoreCase(mark.subject()));
-        marks.add(mark);
+    // runs once at startup: add sample data only if the demo owner has none
+    @Override
+    public void run(String... args) {
+        if (repo.countByOwnerEmail(DEMO_OWNER) == 0) {
+            seed();
+        }
     }
 
-    public List<Mark> getAllMarks() {
-        return List.copyOf(marks);
+    public void addMark(String owner, Mark mark) {
+        MarkEntity e = repo
+                .findByOwnerEmailAndLearnerIdAndSubjectIgnoreCase(owner, mark.learnerId(), mark.subject())
+                .orElseGet(MarkEntity::new);
+        e.setOwnerEmail(owner);
+        e.setLearnerId(mark.learnerId());
+        e.setName(mark.name());
+        e.setClassName(mark.className());
+        e.setSubject(mark.subject());
+        e.setScore(mark.score());
+        repo.save(e);
     }
 
     public static String gradeFor(double average) {
@@ -35,7 +47,12 @@ public class ResultsService {
         return "F";
     }
 
-    public List<LearnerResult> computeResults() {
+    public List<LearnerResult> computeResults(String owner) {
+        List<Mark> marks = repo.findByOwnerEmail(owner).stream()
+                .map(e -> new Mark(e.getLearnerId(), e.getName(), e.getClassName(),
+                        e.getSubject(), e.getScore()))
+                .toList();
+
         Map<String, List<Mark>> byLearner = marks.stream()
                 .collect(Collectors.groupingBy(Mark::learnerId));
 
@@ -71,8 +88,8 @@ public class ResultsService {
         return ranked;
     }
 
-    public Optional<LearnerResult> findResult(String learnerId) {
-        return computeResults().stream()
+    public Optional<LearnerResult> findResult(String owner, String learnerId) {
+        return computeResults(owner).stream()
                 .filter(r -> r.learnerId().equals(learnerId))
                 .findFirst();
     }
@@ -88,7 +105,7 @@ public class ResultsService {
         };
         for (Object[] row : data) {
             for (int i = 0; i < subjects.length; i++) {
-                marks.add(new Mark((String) row[0], (String) row[1], "Grade 7",
+                addMark(DEMO_OWNER, new Mark((String) row[0], (String) row[1], "Grade 7",
                         subjects[i], ((Integer) row[i + 2]).doubleValue()));
             }
         }

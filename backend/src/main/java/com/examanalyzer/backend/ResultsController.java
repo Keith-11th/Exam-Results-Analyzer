@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "http://localhost:5173")
 public class ResultsController {
 
-    // use "py" here if only "py --version" worked for you
     private static final String PYTHON = "python";
     private static final String SCRIPT = "../analytics/analyze.py";
 
@@ -25,18 +24,18 @@ public class ResultsController {
 
     @PostMapping("/marks")
     public Mark addMark(@RequestBody Mark mark) {
-        service.addMark(mark);
+        service.addMark(ResultsService.DEMO_OWNER, mark);
         return mark;
     }
 
     @GetMapping("/results")
     public List<LearnerResult> results() {
-        return service.computeResults();
+        return service.computeResults(ResultsService.DEMO_OWNER);
     }
 
     @GetMapping("/results/{id}")
     public ResponseEntity<LearnerResult> result(@PathVariable("id") String id) {
-        return service.findResult(id)
+        return service.findResult(ResultsService.DEMO_OWNER, id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
