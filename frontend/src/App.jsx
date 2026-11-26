@@ -13,6 +13,7 @@ const emptyForm = {
 
 export default function App() {
   const [results, setResults] = useState([]);
+  const [analysis, setAnalysis] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
@@ -24,6 +25,13 @@ export default function App() {
       setError("");
     } catch {
       setError("Cannot reach the backend. Is it running on port 8080?");
+      return;
+    }
+    try {
+      const res = await fetch(`${API}/analysis`);
+      setAnalysis(res.ok ? await res.json() : null);
+    } catch {
+      setAnalysis(null);
     }
   }
 
@@ -56,6 +64,10 @@ export default function App() {
   }
 
   const selected = results.find((r) => r.learnerId === selectedId);
+  const comment = analysis?.learners.find(
+    (l) => l.learnerId === selectedId
+  )?.comment;
+  const summary = analysis?.summary;
 
   return (
     <div className="app">
@@ -82,6 +94,53 @@ export default function App() {
           <button type="submit">Save mark</button>
         </form>
       </section>
+
+      {summary && summary.learners > 0 && (
+        <section className="card">
+          <h2>Class insights</h2>
+          <div className="stats">
+            <div className="stat">
+              <span>Class average</span>
+              <strong>{summary.classAverage}</strong>
+            </div>
+            <div className="stat">
+              <span>Hardest subject</span>
+              <strong>{summary.hardestSubject}</strong>
+            </div>
+            <div className="stat">
+              <span>Easiest subject</span>
+              <strong>{summary.easiestSubject}</strong>
+            </div>
+          </div>
+
+          <h3>Subject averages</h3>
+          {Object.entries(analysis.subjects).map(([subject, s]) => (
+            <div key={subject} className="bar-row">
+              <span className="bar-label">{subject}</span>
+              <div className="bar-track">
+                <div className="bar-fill" style={{ width: `${s.average}%` }} />
+              </div>
+              <span className="bar-score">{s.average}</span>
+            </div>
+          ))}
+
+          <h3>Grade spread</h3>
+          <div className="grade-spread">
+            {Object.entries(summary.gradeCounts).sort().map(([g, n]) => (
+              <span key={g} className={`grade grade-${g}`}>{g}: {n}</span>
+            ))}
+          </div>
+
+          <h3>Needs attention</h3>
+          {summary.needsAttention.length === 0 ? (
+            <p className="hint">No learner is below 50% average.</p>
+          ) : (
+            <ul className="attention">
+              {summary.needsAttention.map((n) => <li key={n}>{n}</li>)}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h2>Class ranking</h2>
@@ -127,6 +186,7 @@ export default function App() {
               <span className="bar-score">{score}</span>
             </div>
           ))}
+          {comment && <p className="comment">{comment}</p>}
           <button className="print" onClick={() => window.print()}>
             Print report
           </button>

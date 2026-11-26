@@ -41,3 +41,11 @@ tbody tr:hover, tr.active { background: #eff6ff; }
   .form, .hint, button, .card:not(.report) { display: none; }
   body { background: #fff; }
 }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.stat { background: #eff6ff; border-radius: 10px; padding: 12px; }
+.stat span { display: block; color: #6b7280; font-size: 13px; }
+.stat strong { font-size: 20px; }
+h3 { margin: 18px 0 6px; font-size: 15px; color: #374151; }
+.grade-spread { display: flex; gap: 8px; flex-wrap: wrap; }
+.attention { margin: 0; padding-left: 20px; color: #991b1b; }
+.comment { background: #f9fafb; border-left: 4px solid #2563eb; padding: 12px; border-radius: 6px; line-height: 1.5; }
