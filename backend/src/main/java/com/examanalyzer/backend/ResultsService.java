@@ -3,26 +3,15 @@ package com.examanalyzer.backend;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ResultsService implements CommandLineRunner {
-
-    public static final String DEMO_OWNER = "demo";
+public class ResultsService {
 
     private final MarkRepository repo;
 
     public ResultsService(MarkRepository repo) {
         this.repo = repo;
-    }
-
-    // runs once at startup: add sample data only if the demo owner has none
-    @Override
-    public void run(String... args) {
-        if (repo.countByOwnerEmail(DEMO_OWNER) == 0) {
-            seed();
-        }
     }
 
     public void addMark(String owner, Mark mark) {
@@ -94,7 +83,7 @@ public class ResultsService implements CommandLineRunner {
                 .findFirst();
     }
 
-    private void seed() {
+    public void seed(String owner) {
         String[] subjects = {"Math", "English", "Science"};
         Object[][] data = {
                 {"L001", "Aisha Nakato", 85, 78, 90},
@@ -105,7 +94,7 @@ public class ResultsService implements CommandLineRunner {
         };
         for (Object[] row : data) {
             for (int i = 0; i < subjects.length; i++) {
-                addMark(DEMO_OWNER, new Mark((String) row[0], (String) row[1], "Grade 7",
+                addMark(owner, new Mark((String) row[0], (String) row[1], "Grade 7",
                         subjects[i], ((Integer) row[i + 2]).doubleValue()));
             }
         }

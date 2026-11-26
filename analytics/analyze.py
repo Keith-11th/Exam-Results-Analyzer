@@ -1,5 +1,5 @@
 """Exam Results Analyzer - analysis helper.
-Fetches results from the Java backend and prints a JSON analysis."""
+Reads results (from the Java backend or from standard input) and prints a JSON analysis."""
 import json
 import sys
 import urllib.request
@@ -8,6 +8,8 @@ API = "http://localhost:8080/api/results"
 
 
 def load_results():
+    if "--stdin" in sys.argv:
+        return json.loads(sys.stdin.buffer.read())
     with urllib.request.urlopen(API, timeout=10) as response:
         return json.load(response)
 
@@ -32,10 +34,11 @@ def build_comment(r, best, weakest, class_avg, total):
     ]
 
     if best != weakest:
-        parts.append(
-            f"Strongest subject: {best} ({scores[best]:g}). "
-            f"Needs most support in {weakest} ({scores[weakest]:g})."
-        )
+        if scores[weakest] >= 70:
+            weak_text = f"Relatively weaker in {weakest} ({scores[weakest]:g}), though still strong."
+        else:
+            weak_text = f"Needs most support in {weakest} ({scores[weakest]:g})."
+        parts.append(f"Strongest subject: {best} ({scores[best]:g}). {weak_text}")
 
     diff = round(avg - class_avg, 1)
     if diff > 0:
@@ -112,6 +115,6 @@ if __name__ == "__main__":
     try:
         data = load_results()
     except Exception as exc:
-        print(f"Could not load results from {API}: {exc}", file=sys.stderr)
+        print(f"Could not load results: {exc}", file=sys.stderr)
         sys.exit(1)
     print(json.dumps(analyze(data)))
